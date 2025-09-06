@@ -1,15 +1,6 @@
 \# Mis Tareas de Programación
 
 
-
-Bienvenido a mi repositorio. Aquí están organizadas todas mis tareas de Python:
-
-
-
-\## Tareas
-
-
-
 \- \[Tarea 2 - Hello Python](Tarea2HelloPython/)  
 
 \- \[Tarea 3 - Python Functions](Tarea3PythonFunctions/)  

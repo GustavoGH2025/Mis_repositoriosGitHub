@@ -163,13 +163,12 @@ pca_df = pd.DataFrame(
 pca_df[label_col] = df_filtered[label_col].values
 
 
-###
+### BIPLOT
 
 plt.figure(figsize=(10, 10))
 plt.axhline(0, color='lightgray', lw=1)
 plt.axvline(0, color='lightgray', lw=1)
 
-# --- Observaciones ---
 for i in range(df_filtered.shape[0]):
     plt.scatter(
         principal_components[i, 0], 
@@ -183,8 +182,8 @@ for i in range(df_filtered.shape[0]):
         fontsize=7, alpha=0.7
     )
 
-# --- Flechas de variables ---
-# Escalar los loadings para que no queden muy pequeños
+
+# Scale each loading 
 scale_arrows = max(principal_components[:, :2].max(axis=0)) / max(abs(loadings[:, :2]).max(axis=0)) * 0.7
 
 for i, var in enumerate(selected_vars):
@@ -202,7 +201,7 @@ for i, var in enumerate(selected_vars):
         path_effects=[withStroke(linewidth=3, foreground='white')]
     )
 
-# --- Etiquetas de los ejes ---
+# Labels
 plt.xlabel(f"PC1 ({explained_variance_ratio[0]*100:.1f}%)", fontsize=14, weight='bold')
 plt.ylabel(f"PC2 ({explained_variance_ratio[1]*100:.1f}%)", fontsize=14, weight='bold')
 plt.title("PCA Biplot - Núcleo Geoquímico", fontsize=16, weight='bold')

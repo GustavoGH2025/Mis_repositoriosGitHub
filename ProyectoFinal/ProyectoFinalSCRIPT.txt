@@ -1,0 +1,222 @@
+
+#### Principal Component Analysis (PCA)
+
+### To apply a PCA on a geochemical database obtained from a sedimentary record recovered from a lake in southeastern Mexico. The database is composed of measurements taken every 2 cm along the depth of the sediment core. 
+### The aim is to analyze the relationships among the chemical elements measured by X-ray fluorescence and to evaluate the components that are significant using two methods: Kaiser-Guttman Criterion and Broken-Stick Model
+### This technique is often used to analyze the relationship between elemental concentrations in sediment cores, with the aim of identifying allochthonous and autochthonous material inputs into aquatic system (e.g. Castañeda et al., 2022).
+
+
+## Principal Component Analysis (PCA) is a statistical dimensionality reduction technique that transforms a set of variables into a smaller set of principal components (linear combinations of the original variables). The dataset is usually standardized before performing PCA. This technique aims to summarize the variability of the original dataset, and the relationships among the resulting components are evaluated according to their position in the bi-dimensional space (Jolliffe, 1986).
+
+# Load libraries
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+import matplotlib.patheffects as path_effects
+from matplotlib.patheffects import withStroke
+
+# Load dataset
+
+NUCLEO = pd.read_csv("C:/Users/goliv/Documents/GitHub datos/NucleoGeoquimico.csv")
+
+
+# Select variables for PCA
+
+selected_vars = ['Ca','Sr','Fe','Rb','K','Mo','V','S']
+
+label_col = 'depth'  
+
+## In PCA, it is not strictly necessary for variables to follow a normal distribution. This method relies on the covariance and variance of the data to compute linear combinations that maximize the overall variance of the dataset. In PCA, it is important that all variables are roughly on the same scale, which is why standardization is essential.
+
+
+# Drop missing values (none) or NAs (clean the dataset)
+# Removes all rows that contain missing values (NaN) in any of the selected columns.
+
+df_filtered = NUCLEO[selected_vars + [label_col]].dropna().copy()
+print(f"Observations after removing NAs: {df_filtered.shape[0]}")
+
+# Observations after removing NAs: 125 
+# (Only one row was removed).
+
+
+# Scale the data (ensure all variable are on the same scale)
+
+X = df_filtered[selected_vars]
+X_scaled = StandardScaler().fit_transform(X)
+
+_____________________________________________________________________________________________________
+
+## Although Bartlett’s test and the KMO test are preliminary checks used in factor analysis (FA) to assess whether the data are suitable for dimensionality reduction, PCA does not require preliminary tests to calculate correlations among variables in a dataset.
+
+_____________________________________________________________________________________________________
+
+## Perform PCA on the dataset
+# fit_transform(X_scaled) --> Fit the PCA to the standardized data (X_scaled). Returns the transformation of the data into the principal component space.
+# pca.explained_variance_ratio_ --> Percentage of variance explained by each component
+# pca.explained_variance_ --> Eigenvalues of each component, which indicate the amount of variance captured in the original units (original dataset)
+# pca.components_.T  -->  loadings for each variable 
+
+pca = PCA()
+principal_components = pca.fit_transform(X_scaled)
+explained_variance = pca.explained_variance_ratio_
+eigenvalues = pca.explained_variance_
+loadings = pca.components_.T  
+
+___________________________________________________________________________________________
+
+## Significance of each Principal Component (PC) in the PCA
+# Scree plot showing eigenvalues for each PC
+____________________________________________________________________________________________
+
+# 1) Kaiser-Guttman Criterion
+# Evaluate the importance of PCs using Kaiser's Criterion (retain PCs with eigenvalue > 1)
+
+# The Kaiser criterion is a simple rule to decide which principal components (PCs) should be retained. According to this rule, only components with eigenvalues greater than 1 are considered significant. In this method, each standardized variable contributes a variance of 1, so any component with an eigenvalue above 1 explains more variance than a single original variable. In this way, components with eigenvalues greater than 1 capture meaningful information, while those with eigenvalues less than or equal to 1 contribute less than an original variable and are generally discarded (Legendre & Legendre, 1998). 
+
+plt.figure(figsize=(8, 5))
+plt.plot(range(1, len(eigenvalues) + 1), eigenvalues, marker='o')
+plt.axhline(y=1, color='red', linestyle='--', label='Kaiser Criterion')
+plt.title('Scree Plot - PCA')
+plt.xlabel('Principal Component')
+plt.ylabel('Eigenvalue')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+_________________________________________________________________________________________
+
+# 2) Broken Stick Model
+# Evaluate the importance of PCs using Broken Stick Model 
+
+# The Broken Stick model estimates the expected variance of each principal component if the total variance were randomly distributed among all PCs. It first generates a list of proportions using the sum of inverses normalized by the total number of components, and then multiplies these by the observed total variance to put the values on the same scale as the actual eigenvalues. This allows for a comparison between each eigenvalue and its random expectation, helping to determine which PCs are significant (Legendre and Legendre, 1998). 
+
+# Load libraries
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+# Obtain the eigenvalues of all the principal components of the PCA
+# Calculates the total number of components generated in the PCA
+
+eigenvalues = pca.explained_variance_
+n_components = len(eigenvalues)
+
+
+# Calculate the expected variance values for each principal component (PC) according to the Broken Stick model
+# Generate the theoretical variance proportions for each PC and then scale them by multiplying with the observed total variance
+
+broken_stick = [sum([1/i for i in range(j, n_components+1)]) / n_components for j in range(1, n_components+1)]
+broken_stick = np.array(broken_stick) * sum(eigenvalues)  
+
+
+plt.figure(figsize=(8,5))
+plt.plot(range(1, n_components+1), eigenvalues, marker='o', label='Eigenvalues')
+plt.plot(range(1, n_components+1), broken_stick, marker='x', linestyle='--', color='green', label='Broken Stick')
+plt.title('Scree Plot - PCA (Broken Stick)')
+plt.xlabel('Principal Component')
+plt.ylabel('Eigenvalue')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+___________________________________________________________________________________
+
+# 3) Kaiser-Guttman & Broken Stick Model
+# Evaluate the importance of PCs using both the Kaiser-Guttman & Broken Stick methods 
+
+plt.figure(figsize=(8,5))
+plt.plot(range(1, n_components+1), eigenvalues, marker='o', label='Eigenvalues')
+plt.axhline(y=1, color='red', linestyle='--', label="Kaiser > 1")
+plt.plot(range(1, n_components+1), broken_stick, marker='x', linestyle='--', color='green', label='Broken Stick')
+plt.title('Scree Plot - PCA (Kaiser + Broken Stick)')
+plt.xlabel('Principal Component')
+plt.ylabel('Eigenvalue')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+_______________________________________________________________________________________
+
+# PCA bi-plot
+
+# Load libraries
+
+import matplotlib.patheffects as path_effects
+from matplotlib.patheffects import withStroke
+
+
+# Save the percentage of variance explained by each principal component 
+
+explained_variance_ratio = pca.explained_variance_ratio_
+
+
+# Create a DataFrame with the first 2 PCs
+
+pca_df = pd.DataFrame(
+    data=principal_components[:, :2],
+    columns=["PC1", "PC2"]
+)
+pca_df[label_col] = df_filtered[label_col].values
+
+
+###
+
+plt.figure(figsize=(10, 10))
+plt.axhline(0, color='lightgray', lw=1)
+plt.axvline(0, color='lightgray', lw=1)
+
+# --- Observaciones ---
+for i in range(df_filtered.shape[0]):
+    plt.scatter(
+        principal_components[i, 0], 
+        principal_components[i, 1], 
+        color='#4c72b0', alpha=0.75, edgecolor='white', s=70
+    )
+    plt.text(
+        principal_components[i, 0], 
+        principal_components[i, 1], 
+        str(df_filtered[label_col].iloc[i]), 
+        fontsize=7, alpha=0.7
+    )
+
+# --- Flechas de variables ---
+# Escalar los loadings para que no queden muy pequeños
+scale_arrows = max(principal_components[:, :2].max(axis=0)) / max(abs(loadings[:, :2]).max(axis=0)) * 0.7
+
+for i, var in enumerate(selected_vars):
+    plt.arrow(
+        0, 0, 
+        loadings[i, 0]*scale_arrows, 
+        loadings[i, 1]*scale_arrows,
+        color='black', alpha=0.9, linewidth=1.8,
+        head_width=0.08, head_length=0.1, length_includes_head=True
+    )
+    plt.text(
+        loadings[i, 0]*scale_arrows*1.15, 
+        loadings[i, 1]*scale_arrows*1.15, 
+        var, fontsize=12, ha='center', va='center', color='darkgreen',
+        path_effects=[withStroke(linewidth=3, foreground='white')]
+    )
+
+# --- Etiquetas de los ejes ---
+plt.xlabel(f"PC1 ({explained_variance_ratio[0]*100:.1f}%)", fontsize=14, weight='bold')
+plt.ylabel(f"PC2 ({explained_variance_ratio[1]*100:.1f}%)", fontsize=14, weight='bold')
+plt.title("PCA Biplot - Núcleo Geoquímico", fontsize=16, weight='bold')
+plt.grid(True)
+plt.show()
+
+
+
+
+References
+
+Castañeda-Posadas, C., Correa-Metrio, A., Escobar, J., Moreno, J.E., Curtis, J.H., Blaauw, M., Jaramillo, C. 2022. Mid to late Holocene sea-level rise and precipitation variability recorded in the fringe mangroves of the Caribbean coast of Panama. Palaeogeography, Palaeoclimatology, Palaeoecology, 592, 110918
+
+Jolliffe, I.T., 1986. Principal Component Analysis, 1st ed. Springer New York, NY, Berlin, p. 271
+
+Legendre, P., Legendre, L., 1998. Numerical Ecology: Developments in Environmental Modelling, 2nd ed. Elsevier, p. 853.
+
